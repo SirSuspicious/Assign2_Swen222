@@ -2,11 +2,13 @@ package main;
 
 
 
+import java.awt.Dimension;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Scanner;
 
+import GUI.GameFrame;
 import board.*;
 import gameObjects.*;
 
@@ -35,11 +37,15 @@ public class Cluedo {
 	
 	public static void main(String[] args){
 		
-		Cluedo m = new Cluedo(new Scanner(System.in));
+		//Cluedo m = new Cluedo(new Scanner(System.in));
 		
-		m.gameLoop();
+		//m.gameLoop();
+		GameFrame g = new GameFrame();
+
 		
-		System.exit(0);
+		
+		
+		//System.exit(0);
 		
 		
 	}
@@ -79,7 +85,7 @@ public class Cluedo {
 			
 			if(players.size() == 1){
 				System.out.println(players.get(0).getName()+ " wins!");
-				System.exit(0);
+				break;
 			}
 			if(curPlayer >= players.size()){
 				curPlayer = 0;
@@ -87,7 +93,7 @@ public class Cluedo {
 			int i = players.get(curPlayer).doTurn(input, board, solution);
 			if(i == 1){
 				System.out.println(players.get(curPlayer).getName()+" wins!");
-				System.exit(0);
+				break;
 				
 			}else if(i == 2){
 				System.out.println("Accusation incorrect, "+players.get(curPlayer).getName()+" eliminated!");
