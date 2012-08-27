@@ -34,7 +34,6 @@ public class Cluedo {
 	private Scanner input;
 	
 	
-	
 	public static void main(String[] args){
 		
 		//Cluedo m = new Cluedo(new Scanner(System.in));
