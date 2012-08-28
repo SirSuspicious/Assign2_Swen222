@@ -2,7 +2,9 @@ package main;
 
 
 
-import java.awt.Dimension;
+
+import java.awt.Color;
+import java.awt.Graphics;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,11 +27,9 @@ public class Cluedo {
 
 	private  ArrayList<Card> allCards = new ArrayList<Card>();
 	
-
 	private  Board board;
 	
 	private  Solution solution;
-	
 	
 	private Scanner input;
 	
@@ -39,14 +39,11 @@ public class Cluedo {
 		//Cluedo m = new Cluedo(new Scanner(System.in));
 		
 		//m.gameLoop();
-		GameFrame g = new GameFrame();
-
-		
+		GameFrame gf = new GameFrame();
 		
 		
 		//System.exit(0);
-		
-		
+
 	}
 
 	/**

@@ -5,62 +5,80 @@ import java.awt.Component;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 
 
 public class BoardCanvas extends Component {
 	
+	//The x and y proportion for the canvas with respect to the frame it is in.
+	private final double propX;
+	private final double propY;
 	
-	
-	
-	
-	private Image boardImg;
+	private BufferedImage boardImg;
 
-	
-	
-	//use  component.getBounds() to get current frame size
-	private GameFrame frame;
-	
-	public BoardCanvas(GameFrame f){
+	/**
+	 * 
+	 * @param proportionX The horizontal proportion this canvas will take up in the parent.
+	 * @param proportionY The vertical proportion this canvas will take up in the parent.
+	 */
+	public BoardCanvas(double proportionX, double proportionY){
 		super();
-		frame = f;
+		//The cluedo.jpeg file is a 1600x1600 image.
+		boardImg =  new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_ARGB);
 		
+		propX = proportionX;
+		propY = proportionY;
 		
 	}
 	
-	private void something(){
-		
-		this.getParent();
-	}
-	
-	
+
 	@Override
 	public void paint(Graphics g){
 		
-		Image i = scaleImage();
-		Graphics gr = i.getGraphics();
-		gr.setColor(Color.BLACK);
-		gr.fillRect(this.getParent().getWidth()/4, this.getParent().getHeight()/4, this.getParent().getWidth()/4, this.getParent().getHeight()/4);
+		int newW = (int)(((double)this.getParent().getWidth())*propX);
+		int newH = (int)(((double)this.getParent().getHeight())*propY);
 		
-		Graphics2D gfx = (Graphics2D)g;
+		if(newH < 1){
+			newH = 1;
+		}
+		if(newW < 1){
+			newW = 1;
+		}
 		
-		gfx.drawImage(i, 0, 0, getParent().getWidth(), getParent().getHeight(), this);
-		
+		BufferedImage i = scaleImage(newW, newH);
+	
+		g.drawImage(i, 0, 0, newW, newH, null);
 		
 	}
 	
-	
-	public Graphics getGraphics(){
+	/**
+	 * gets the graphics of the image that will be resized and drawn to the canvas.
+	 * @return
+	 */
+	public Graphics getImgGfx(){
 		
 		return boardImg.getGraphics();
 		
 		
 	}
 	
-	
-	private Image scaleImage(){
-		//TODO scale boardImg to the right size for the frame.
-		return new BufferedImage(getParent().getWidth(), getParent().getHeight(), BufferedImage.TYPE_INT_ARGB);
+	/**
+	 * Scales the boardImg to the specified width and height.
+	 * @param width
+	 * @param height
+	 * @return
+	 */
+	private BufferedImage scaleImage(int width, int height){
+		
+		BufferedImage scaled = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+		
+		Graphics2D g = scaled.createGraphics();
+		g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+		
+		g.drawImage(boardImg, 0, 0, width, height, null);
+		
+		
+		return scaled;
 	}
-	
 }
