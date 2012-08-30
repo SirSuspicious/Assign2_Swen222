@@ -12,6 +12,8 @@ public class GameFrame extends JFrame {
 	private final double canvasPropX = 1.0;
 	private final double canvasPropY = 10.0/14.0;
 	
+	private BottomPanel bPanel;
+	
 	public GameFrame(){
 		super();
 		this.setPreferredSize(new Dimension(600, 600));
@@ -19,7 +21,13 @@ public class GameFrame extends JFrame {
 		
 		canvas = new BoardCanvas(canvasPropX, canvasPropY);
 		this.add(canvas, BorderLayout.CENTER);
-	
+		
+		this.setJMenuBar(new Menu());
+		
+		bPanel = new BottomPanel(canvasPropX, 1.0 - canvasPropY);
+		this.add(bPanel);
+		
+		
 		this.pack();
 		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);

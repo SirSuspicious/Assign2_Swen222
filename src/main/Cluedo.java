@@ -34,6 +34,12 @@ public class Cluedo {
 	private Scanner input;
 	
 	
+	
+	
+	
+	private static Cluedo game;
+	
+	
 	public static void main(String[] args){
 		
 		//Cluedo m = new Cluedo(new Scanner(System.in));
@@ -42,8 +48,20 @@ public class Cluedo {
 		GameFrame gf = new GameFrame();
 		
 		
+		/*
+		 * Used to test the scaling f the BoardCanvas class.
+		Graphics g = gf.getCanvasGfx();
+		g.setColor(Color.magenta);
+		g.fillRect(400, 400, 800, 800);
+		*/
+		
 		//System.exit(0);
 
+	}
+	
+	public static void newGame(){
+		//This will eventually be used to initialize a Cluedo instead of main.
+		
 	}
 
 	/**
