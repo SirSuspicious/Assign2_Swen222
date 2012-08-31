@@ -1,5 +1,7 @@
 package gameObjects;
 
+import java.awt.image.BufferedImage;
+
 public abstract class Card {
 	private CardToken name;
 	
@@ -38,6 +40,10 @@ public abstract class Card {
 		} else if (!name.equals(other.name))
 			return false;
 		return true;
+	}
+	
+	public BufferedImage getImg(){
+		return name.getImage();
 	}
 	
 	

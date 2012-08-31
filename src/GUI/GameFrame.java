@@ -1,8 +1,11 @@
 package GUI;
 
+import gameObjects.Card;
+
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.util.ArrayList;
 
 import javax.swing.JFrame;
 
@@ -12,11 +15,11 @@ public class GameFrame extends JFrame {
 	private final double canvasPropX = 1.0;
 	private final double canvasPropY = 10.0/14.0;
 	
-	private BottomPanel bPanel;
+	private InfoPanel bPanel;
 	
 	public GameFrame(){
 		super();
-		this.setPreferredSize(new Dimension(600, 600));
+		this.setPreferredSize(new Dimension(600, 700));
 		this.setLayout(new BorderLayout());
 		
 		canvas = new BoardCanvas(canvasPropX, canvasPropY);
@@ -24,8 +27,8 @@ public class GameFrame extends JFrame {
 		
 		this.setJMenuBar(new Menu());
 		
-		bPanel = new BottomPanel(canvasPropX, 1.0 - canvasPropY);
-		this.add(bPanel);
+		bPanel = new InfoPanel(canvasPropX, 1.0 - canvasPropY);
+		this.add(bPanel, BorderLayout.SOUTH);
 		
 		
 		this.pack();
@@ -37,5 +40,14 @@ public class GameFrame extends JFrame {
 	public Graphics getCanvasGfx(){
 		return canvas.getImgGfx();
 	}
-	
+
+	public void showDice(int dice1, int dice2){
+		bPanel.showDice(dice1, dice2);
+	}
+
+	public void displayHand(ArrayList<Card> cards){
+		bPanel.displayHand(cards);
+
+	}
+
 }

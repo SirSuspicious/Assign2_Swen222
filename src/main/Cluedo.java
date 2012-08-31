@@ -5,10 +5,14 @@ package main;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Scanner;
+
+import javax.imageio.ImageIO;
 
 import GUI.GameFrame;
 import board.*;
@@ -49,11 +53,27 @@ public class Cluedo {
 		
 		
 		/*
-		 * Used to test the scaling f the BoardCanvas class.
+		 * Used to test the scaling of components in the GameFrame*/
 		Graphics g = gf.getCanvasGfx();
-		g.setColor(Color.magenta);
-		g.fillRect(400, 400, 800, 800);
-		*/
+	
+		BufferedImage board = null;
+		try{
+			board = ImageIO.read(new File("Cluedo.jpg"));
+		}catch(Exception e){
+			System.out.println(e);
+			System.exit(1);
+		}
+		g.drawImage(board, 0, 0, 1600, 1600, null);
+		gf.repaint();
+		
+		gf.showDice(3, 6);
+		
+		ArrayList<Card> hand = new ArrayList<Card>();
+		hand.add(new CharacterCard(Person.Kasandra_Scarlett));
+		hand.add(new WeaponCard(Weapon.AXE));
+		hand.add(new CharacterCard(Person.Jacob_Green));
+		hand.add(new RoomCard(RoomType.DINING_ROOM));
+		gf.displayHand(hand);
 		
 		//System.exit(0);
 
