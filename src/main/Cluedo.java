@@ -3,8 +3,11 @@ package main;
 
 
 
-import java.awt.Color;
+import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.ArrayList;
@@ -13,6 +16,14 @@ import java.util.HashMap;
 import java.util.Scanner;
 
 import javax.imageio.ImageIO;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+import javax.swing.JTextField;
 
 import GUI.GameFrame;
 import board.*;
@@ -37,51 +48,32 @@ public class Cluedo {
 	
 	private Scanner input;
 	
+	private int numPlayers;
+	
+	private GameFrame frame;
 	
 	
 	
-	
-	private static Cluedo game;
+	private static Cluedo game = null;
 	
 	
 	public static void main(String[] args){
 		
 		//Cluedo m = new Cluedo(new Scanner(System.in));
 		
-		//m.gameLoop();
-		GameFrame gf = new GameFrame();
+		newGame();
 		
-		
-		/*
-		 * Used to test the scaling of components in the GameFrame*/
-		Graphics g = gf.getCanvasGfx();
 	
-		BufferedImage board = null;
-		try{
-			board = ImageIO.read(new File("Cluedo.jpg"));
-		}catch(Exception e){
-			System.out.println(e);
-			System.exit(1);
-		}
-		g.drawImage(board, 0, 0, 1600, 1600, null);
-		gf.repaint();
-		
-		gf.showDice(3, 6);
-		
-		ArrayList<Card> hand = new ArrayList<Card>();
-		hand.add(new CharacterCard(Person.Kasandra_Scarlett));
-		hand.add(new WeaponCard(Weapon.AXE));
-		hand.add(new CharacterCard(Person.Jacob_Green));
-		hand.add(new RoomCard(RoomType.DINING_ROOM));
-		gf.displayHand(hand);
-		
-		//System.exit(0);
-
+	
 	}
 	
 	public static void newGame(){
-		//This will eventually be used to initialize a Cluedo instead of main.
-		
+		if(game != null){
+			game.disposeFrame();
+		}
+			
+		game = new Cluedo();
+
 	}
 	
 	
@@ -93,6 +85,27 @@ public class Cluedo {
 
 		allCards = new ArrayList<Card>();
 		board = new Board("board.txt");
+		
+	
+		/*
+		 * show something in the beginning.
+		 */
+		frame = new GameFrame();
+		Graphics g = frame.getCanvasGfx();
+
+		BufferedImage board = null;
+		try{
+			board = ImageIO.read(new File("Cluedo.jpg"));
+		}catch(Exception e){
+			System.out.println(e);
+			System.exit(1);
+		}
+		g.drawImage(board, 0, 0, 1600, 1600, null);
+		frame.repaint();
+		frame.showDice(1, 1);
+		
+		startUpGUI();
+		
 	}
 
 	/**
@@ -162,7 +175,6 @@ public class Cluedo {
 				curPlayer++;
 			}
 		}
-		
 	}
 	
 	/**
@@ -224,8 +236,122 @@ public class Cluedo {
 		
 	}
 	
+	/**
+	 * like startUp but using a GUI
+	 * 
+	 */
 	private void startUpGUI(){
+		setNumPlayers();
+	
+		HashMap<Person, JRadioButton> rButtons = new HashMap<Person, JRadioButton>();
 		
+		for(Person p : Person.values()){
+			JRadioButton b = new JRadioButton(p.toString());
+
+			rButtons.put(p, b);
+		}
+		
+		for(int i = 1; i <= numPlayers; i++){
+			String pName = "Player " + i;
+			addCharacter(rButtons, pName);
+			
+		}
+	}
+	
+	/**
+	 * Adds a player to the game using a JDialog box to ask the usuer what character they wish to play as.
+	 * 
+	 * @param rButtons 
+	 * @param player the name of the player
+	 */
+	private void addCharacter(HashMap<Person, JRadioButton> rButtons, final String player){
+		final ButtonGroup group = new ButtonGroup();
+		final HashMap<Person, JRadioButton> buttonMap = rButtons;
+		
+		for(Person p: rButtons.keySet()){
+			group.add(rButtons.get(p));
+		}
+		
+		final JDialog d = new JDialog();
+		d.setModal(true);
+
+		d.setLayout(new BorderLayout());
+
+		JLabel label = new JLabel(player+" pick a character:");
+		d.add(label, BorderLayout.NORTH);
+		
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
+		
+		for(Person p: Person.values()){
+			JRadioButton b = rButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			buttonPanel.add(b);
+		}
+		
+		d.add(buttonPanel);
+		
+		JButton button = new JButton("Ok");
+		
+		button.addActionListener(new ActionListener(){
+		
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for(Person p :buttonMap.keySet()){
+					if(buttonMap.get(p).getModel() == group.getSelection() && buttonMap.get(p).isEnabled() == true){
+						players.add(new Player(board.getStartTile(p), player, p));
+						d.setVisible(false);
+						buttonMap.get(p).setSelected(false);//this didn't seem to work, not sure why, but I didn't look into it.
+						buttonMap.get(p).setEnabled(false);
+						return;
+					}
+				}
+			}
+		});
+		
+		d.add(button, BorderLayout.SOUTH);
+		d.pack();
+		d.setVisible(true);
+	
+	}
+	
+	
+	/**
+	 * used by startUpGUI
+	 * to get the number of players
+	 * @return
+	 */
+
+	private void setNumPlayers(){
+		
+		final JDialog d = new JDialog();
+		d.setModal(true);
+		d.setLayout(new BorderLayout());
+		
+		JLabel label = new JLabel("Enter number of players (3 - 6):");
+		d.add(label, BorderLayout.NORTH);
+		
+		final JTextField tf = new JTextField();
+		d.add(tf, BorderLayout.CENTER);
+		
+		JButton button = new JButton("Ok");
+		button.addActionListener(new ActionListener(){
+	
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				try{
+					numPlayers = Integer.parseInt(tf.getText());
+					if(numPlayers <7 && numPlayers > 2){
+						d.setVisible(false);
+						}
+				}catch(Exception e){
+					
+				}
+			}
+		});
+		d.add(button, BorderLayout.SOUTH);
+		d.pack();
+		d.setVisible(true);
 		
 	}
 	
@@ -272,7 +398,7 @@ public class Cluedo {
 				
 			}
 			Person p = characters.get(per);
-			players.add(new Player(board.getStartTile(p), "Player "+i));
+			players.add(new Player(board.getStartTile(p), "Player "+i, p));
 			characters.remove(per);
 			System.out.println();
 			
@@ -294,6 +420,10 @@ public class Cluedo {
 		
 	}
 	
+	
+	private void disposeFrame(){
+		frame.dispose();
+	}
 	
 	/**
 	 * Helper method.

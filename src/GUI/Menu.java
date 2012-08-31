@@ -70,7 +70,14 @@ public class Menu extends JMenuBar {
 				}
 			};
 		ngItem.setMnemonic(KeyEvent.VK_E);
+		ngItem.addActionListener(new ActionListener(){
+			public void actionPerformed(ActionEvent e){
+				System.exit(0);
+			}
+		});
 		ngItem.setToolTipText("l");
+		
+		
 		
 		menu.add(ngItem);
 		

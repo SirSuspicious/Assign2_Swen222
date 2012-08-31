@@ -18,12 +18,13 @@ public class Player {
 	private Player prevPlayer;
 	private Tile on;
 	private Room inRoom = null;
+	private Person playingAs;
 	
 	
 	
-	public Player(Tile start, String name){
+	public Player(Tile start, String name, Person p){
 		hand = new ArrayList<Card>();
-
+		playingAs = p;
 		on = start;
 		this.name = name;
 	}
