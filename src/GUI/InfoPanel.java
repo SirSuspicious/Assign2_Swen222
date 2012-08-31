@@ -49,6 +49,10 @@ public class InfoPanel extends JPanel {
 
 	}
 	
+	public void addText(String text){
+		leftPanel.addText(text);
+	}
+	
 	@Override
 	public Dimension getPreferredSize(){
 		int y = (int)(((double)this.getParent().getHeight())*propY);

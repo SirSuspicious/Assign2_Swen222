@@ -36,6 +36,10 @@ public class LeftPanel extends JPanel {
 		diceD.showDice(dice1, dice2);
 	}
 	
+	public void addText(String text){
+		messageP.addText(text);
+	}
+	
 	@Override
 	public Dimension getPreferredSize(){
 		int y = (int)(((double)this.getParent().getHeight())*propY);

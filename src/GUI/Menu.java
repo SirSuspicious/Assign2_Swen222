@@ -33,7 +33,21 @@ public class Menu extends JMenuBar {
 		
 		menu.setToolTipText("q");
 		
-		JMenuItem ngItem = new JMenuItem("New Game"){};
+		JMenuItem ngItem = new JMenuItem("New Game"){
+			public JToolTip createToolTip() {
+			JToolTip t = new JToolTip(){
+				public String getTipText() {
+					return "Alt + N";
+				}
+
+			};
+			t.setComponent(this);
+			return t;
+		}
+		};
+		ngItem.setToolTipText("l");
+		
+		
 		ngItem.addActionListener(new ActionListener(){
 			public void actionPerformed(ActionEvent e){
 				Cluedo.newGame();
@@ -41,14 +55,23 @@ public class Menu extends JMenuBar {
 		});
 		ngItem.setMnemonic(KeyEvent.VK_N);
 		menu.add(ngItem);
-		
-		ngItem = new JMenuItem("Exit"){};
-		ngItem.addActionListener(new ActionListener(){
-			public void actionPerformed(ActionEvent e){
-				System.exit(0);
-			}
-		});
+
+		ngItem = new JMenuItem("Exit"){
+			
+				public JToolTip createToolTip() {
+					JToolTip t = new JToolTip(){
+						public String getTipText() {
+							return "Alt + E";
+						}
+
+					};
+					t.setComponent(this);
+					return t;
+				}
+			};
 		ngItem.setMnemonic(KeyEvent.VK_E);
+		ngItem.setToolTipText("l");
+		
 		menu.add(ngItem);
 		
 		this.add(menu);

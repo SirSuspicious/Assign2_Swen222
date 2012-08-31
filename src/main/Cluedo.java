@@ -83,6 +83,17 @@ public class Cluedo {
 		//This will eventually be used to initialize a Cluedo instead of main.
 		
 	}
+	
+	
+	public Cluedo(){
+		players = new ArrayList<Player>();
+		weapons = new ArrayList<WeaponCard>();
+		characters = new ArrayList<CharacterCard>();
+		rooms = new ArrayList<RoomCard>();
+
+		allCards = new ArrayList<Card>();
+		board = new Board("board.txt");
+	}
 
 	/**
 	 * 
@@ -210,6 +221,11 @@ public class Cluedo {
 			players.get(playerCount).addCard(card);
 			playerCount++;
 		}
+		
+	}
+	
+	private void startUpGUI(){
+		
 		
 	}
 	

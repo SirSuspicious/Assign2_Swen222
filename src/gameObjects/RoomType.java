@@ -17,7 +17,7 @@ public enum RoomType implements CardToken {
 	HALL("RoomImages\\Hall.jpg"),
 	KITCHEN("RoomImages\\Kitchen.jpg"),
 	DINING_ROOM("RoomImages\\DiningRoom.jpg"),
-	GUEST_HOUSE("RoomImages\\GuestGouse.jpg");
+	GUEST_HOUSE("RoomImages\\GuestHouse.jpg");
 	
 private BufferedImage img = null;
 	

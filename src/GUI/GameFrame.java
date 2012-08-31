@@ -5,6 +5,7 @@ import gameObjects.Card;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 
 import javax.swing.JFrame;
@@ -15,7 +16,7 @@ public class GameFrame extends JFrame {
 	private final double canvasPropX = 1.0;
 	private final double canvasPropY = 10.0/14.0;
 	
-	private InfoPanel bPanel;
+	private InfoPanel iPanel;
 	
 	public GameFrame(){
 		super();
@@ -27,8 +28,8 @@ public class GameFrame extends JFrame {
 		
 		this.setJMenuBar(new Menu());
 		
-		bPanel = new InfoPanel(canvasPropX, 1.0 - canvasPropY);
-		this.add(bPanel, BorderLayout.SOUTH);
+		iPanel = new InfoPanel(canvasPropX, 1.0 - canvasPropY);
+		this.add(iPanel, BorderLayout.SOUTH);
 		
 		
 		this.pack();
@@ -42,12 +43,31 @@ public class GameFrame extends JFrame {
 	}
 
 	public void showDice(int dice1, int dice2){
-		bPanel.showDice(dice1, dice2);
+		iPanel.showDice(dice1, dice2);
 	}
 
 	public void displayHand(ArrayList<Card> cards){
-		bPanel.displayHand(cards);
+		iPanel.displayHand(cards);
 
+	}
+	
+	/**
+	 * Sets the parameter m to be the mouse listener for the board
+	 * @param m
+	 */
+	public void addCanvasListener(MouseListener m){
+		canvas.addMouseListener(m);
+		
+	}
+	
+	
+	
+	/**
+	 * Appends the specified text to the text area.
+	 * @param text
+	 */
+	public void addText(String text){
+		iPanel.addText(text);
 	}
 
 }

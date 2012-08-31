@@ -6,6 +6,8 @@ import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 
+import board.*;
+
 
 public class BoardCanvas extends Component {
 	
@@ -14,6 +16,13 @@ public class BoardCanvas extends Component {
 	private final double propY;
 	
 	private BufferedImage boardImg;
+	
+	//The cluedo.jpeg file is a 1600x1600 image.
+	private int origX = 1600;
+	private int origY = 1600;
+	
+	private int scaledX = 0;
+	private int scaledY = 0;
 
 	/**
 	 * 
@@ -22,8 +31,8 @@ public class BoardCanvas extends Component {
 	 */
 	public BoardCanvas(double proportionX, double proportionY){
 		super();
-		//The cluedo.jpeg file is a 1600x1600 image.
-		boardImg =  new BufferedImage(1600, 1600, BufferedImage.TYPE_INT_ARGB);
+		
+		boardImg =  new BufferedImage(origX, origY, BufferedImage.TYPE_INT_ARGB);
 		
 		propX = proportionX;
 		propY = proportionY;
@@ -34,20 +43,48 @@ public class BoardCanvas extends Component {
 	@Override
 	public void paint(Graphics g){
 		
-		int newW = (int)(((double)this.getParent().getWidth())*propX);
-		int newH = (int)(((double)this.getParent().getHeight())*propY);
+		scaledX = (int)(((double)this.getParent().getWidth())*propX);
+		scaledY = (int)(((double)this.getParent().getHeight())*propY);
 		
-		if(newH < 1){
-			newH = 1;
+		if(scaledY < 1){
+			scaledY = 1;
 		}
-		if(newW < 1){
-			newW = 1;
+		if(scaledX < 1){
+			scaledX = 1;
 		}
 		
-		BufferedImage i = scaleImage(boardImg, newW, newH);
+		BufferedImage i = scaleImage(boardImg, scaledX, scaledY);
 	
-		g.drawImage(i, 0, 0, newW, newH, null);
+		g.drawImage(i, 0, 0, scaledX, scaledY, null);
 		
+	}
+	
+	public Position findSquarePos(int x, int y){
+		/*
+		 * On the Cluedo board image, the first 39 tiles must be skipped along the x axis to 
+		 * reach the first tile.
+		 * Similarly the first 38 pixels must be skipped along the y axis.
+		 * each tile is 50 by 50 pixels, with a 1 pixel wide gap between each tile and its neighbour.
+		 */
+		int toFirstXTile = 39;
+		int toFirstYTile = 38;
+		int tileDim = 51;
+		
+		
+		double xFac = ((double)origX) / ((double)scaledX);
+		double yFac = ((double)origY) / ((double)scaledY);
+		
+		int newX = (int)((double)x*xFac);
+		int newY = (int)((double)y*yFac);
+		
+		newX = newX - toFirstXTile;
+		newY = newY - toFirstYTile;
+		
+		newX = newX/tileDim;
+		newY = newY/tileDim;
+		
+		
+		return new Position(newX, newY);
 	}
 	
 	/**
