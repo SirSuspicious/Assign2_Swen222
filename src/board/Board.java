@@ -3,6 +3,7 @@ package board;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.PriorityQueue;
 import java.util.Scanner;
 import gameObjects.*;
 
@@ -11,6 +12,7 @@ public class Board {
 	private Tile[][] tiles;
 	private HashMap<Person, Tile> startPos;
 	private HashMap<RoomType, Room> rooms;
+	
 	
 	private final int numR = 29;//number of rows in the board grid.
 	private final int numC = 24;//number of columns in the board grid.
@@ -22,9 +24,13 @@ public class Board {
 		startPos = new HashMap<Person, Tile>();
 		rooms = new HashMap<RoomType, Room>();
 		
+		
+		
 		readBoard(fname);
 	}
 	
+	
+
 	/**
 	 * gets the Tile at which that particular character starts at.
 	 * @param person
@@ -34,6 +40,67 @@ public class Board {
 		return startPos.get(person);
 	}
 	
+	/**
+	 * checks if the specified position is within a room, and returns the room it is in, otherwise returns null.
+	 * @param pos
+	 * @return
+	 */
+	public RoomType inRoom(Position pos){
+		Tile tile = tiles[pos.getY()][pos.getX()];
+		if(tile instanceof inRoomTile)
+			return ((inRoomTile) tile).room();
+		return null;
+	}
+	
+	public int isViableMove(Tile on, Tile to, int length){
+		
+		/*
+		 * fringe tile search nodes
+		 * heuristic;
+		 * 
+		 */
+		
+		ArrayList<Position> visited =  new ArrayList<Position>();
+		
+		PriorityQueue<SearchNode> fringe = new PriorityQueue<SearchNode>();
+		
+		fringe.offer(new SearchNode(calcHeur(on.pos, to.pos), 0, on.pos));
+		
+		while(!fringe.isEmpty()){
+			SearchNode next = fringe.poll();
+			if(next.pos.equals(to.pos)){
+				if(next.toHere <= length){
+					
+					return next.toHere;
+				}
+				return -1;
+			}
+			if(!visited.contains(next.pos)){
+				visited.add(next.pos);
+				
+				for(Tile t : getAdjTiles(tiles[next.pos.getY()][next.pos.getX()])){
+					
+					if( t != null && !visited.contains(t.pos)){
+						fringe.offer(new SearchNode(calcHeur(t.pos, to.pos), next.toHere+1, t.pos));
+					}
+				}
+				
+			}
+		}
+		
+		return -1;
+	}
+	
+	private int calcHeur(Position p1, Position p2){
+		return Math.abs(p1.getX() - p2.getX()) + Math.abs(p1.getY() - p2.getY());
+	}
+	
+	public Tile getTile(Position p){
+		int y = p.getY();
+		int x = p.getX();
+		return tiles[y][x];
+		
+	}
 	
 	/**
 	 * Returns the tiles that can be moved to from the tile parameter.
@@ -47,17 +114,17 @@ public class Board {
 		int col = t.getPosition().getX();
 		
 		
-		if(row != 0 && tiles[row-1][col] != null){
+		if(row > 0 && !(tiles[row-1][col] instanceof inRoomTile) && tiles[row-1][col] != null){
 			listTiles.add(tiles[row-1][col]);
 		}
-		if(row != numR-1 && tiles[row+1][col] != null){
+		if(row < numR-1 && !(tiles[row+1][col] instanceof inRoomTile)&& tiles[row+1][col] != null){
 			listTiles.add(tiles[row+1][col]);
 		}
 		
-		if(col != 0 && tiles[row][col-1] != null){
+		if(col > 0 && !(tiles[row][col-1] instanceof inRoomTile)&& tiles[row][col-1] != null){
 			listTiles.add(tiles[row][col-1]);
 		}
-		if(col != numC-1 && tiles[row][col+1] != null){
+		if(col < numC-1 && !(tiles[row][col+1] instanceof inRoomTile)&& tiles[row][col+1] != null){
 			listTiles.add(tiles[row][col+1]);
 		}
 		
@@ -109,6 +176,7 @@ public class Board {
 						if(scan.nextInt() == 1){
 							tiles[row][col] = new Tile(new Position(col, row));
 						}else{
+							
 							tiles[row][col] = null;
 						}
 					}else{
@@ -119,6 +187,13 @@ public class Board {
 							Tile tile = new Tile(new Position(col, row));
 							//record the tile the character starts on.
 							startPos.put(Person.valueOf(next), tile);
+							tiles[row][col] = tile;
+							
+						}else if(next.charAt(0) == '#'){
+							next = next.substring(1);
+							
+							inRoomTile tile = new inRoomTile(new Position(col, row), RoomType.valueOf(next));
+							
 							tiles[row][col] = tile;
 						}else{
 							RoomType r = RoomType.valueOf(next);

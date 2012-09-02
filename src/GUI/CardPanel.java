@@ -42,7 +42,7 @@ public class CardPanel extends Component {
 	 * then paint them all to a new image, and resize that to fit the component.	
 	 */
 		
-		hand = new BufferedImage(cardResizeX*cards.size(), cardResizeY, BufferedImage.TYPE_INT_ARGB);
+		hand = new BufferedImage(cardResizeX*cards.size()+1, cardResizeY+1, BufferedImage.TYPE_INT_ARGB);
 		Graphics g = hand.getGraphics();
 		
 		numCards = cards.size();

@@ -59,16 +59,22 @@ public class BoardCanvas extends Component {
 		
 	}
 	
+	/*
+	 * On the Cluedo board image, the first 39 tiles must be skipped along the x axis to 
+	 * reach the first tile.
+	 * Similarly the first 38 pixels must be skipped along the y axis.
+	 * each tile is 50 by 50 pixels, with a 1 pixel wide gap between each tile and its neighbour.
+	 * upon further inspection, i have found that the height of a tile on the cluedo board varies between
+	 * 52 and 53 pixels.  -_-
+	*/
+	private int toFirstXTile = 39;
+	private int toFirstYTile = 38;
+	private int tileDimX = 52;
+	private int tileDimY = 52;
+	
+	
 	public Position findSquarePos(int x, int y){
-		/*
-		 * On the Cluedo board image, the first 39 tiles must be skipped along the x axis to 
-		 * reach the first tile.
-		 * Similarly the first 38 pixels must be skipped along the y axis.
-		 * each tile is 50 by 50 pixels, with a 1 pixel wide gap between each tile and its neighbour.
-		 */
-		int toFirstXTile = 39;
-		int toFirstYTile = 38;
-		int tileDim = 51;
+		
 		
 		
 		double xFac = ((double)origX) / ((double)scaledX);
@@ -77,14 +83,22 @@ public class BoardCanvas extends Component {
 		int newX = (int)((double)x*xFac);
 		int newY = (int)((double)y*yFac);
 		
+		if(newX > toFirstXTile + (tileDimX*24) || newY > toFirstYTile + (tileDimY*29)){
+			return null;
+		}
+		
 		newX = newX - toFirstXTile;
 		newY = newY - toFirstYTile;
 		
-		newX = newX/tileDim;
-		newY = newY/tileDim;
+		newX = newX/tileDimX;
+		newY = newY/tileDimY;
 		
 		
 		return new Position(newX, newY);
+	}
+	
+	public Position findCoordinatePos(int x, int y){
+		return new Position(toFirstXTile + x*tileDimX, toFirstYTile+y*tileDimY+(y/2)+1);
 	}
 	
 	/**

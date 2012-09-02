@@ -48,11 +48,11 @@ public class Cluedo {
 	
 	private Scanner input;
 	
-	private int numPlayers;
+	private int numPlayers = 0;
 	
 	private GameFrame frame;
 	
-	
+	private BufferedImage boardImg;
 	
 	private static Cluedo game = null;
 	
@@ -93,18 +93,35 @@ public class Cluedo {
 		frame = new GameFrame();
 		Graphics g = frame.getCanvasGfx();
 
-		BufferedImage board = null;
+		
 		try{
-			board = ImageIO.read(new File("Cluedo.jpg"));
+			boardImg = ImageIO.read(new File("Cluedo.jpg"));
 		}catch(Exception e){
 			System.out.println(e);
 			System.exit(1);
 		}
-		g.drawImage(board, 0, 0, 1600, 1600, null);
+		g.drawImage(boardImg, 0, 0, 1600, 1600, null);
 		frame.repaint();
 		frame.showDice(1, 1);
 		
 		startUpGUI();
+		if(numPlayers >= 3){
+			dealCards();
+
+			redraw();
+			frame.repaint();
+			gameLoopGUI();
+		}
+		
+	}
+	
+	public void redraw(){
+		Graphics g = frame.getCanvasGfx();
+		g.drawImage(boardImg, 0, 0, 1600, 1600, null);
+		for(Player p : players){
+			p.draw(g);
+		}
+		frame.repaint();
 		
 	}
 
@@ -132,6 +149,81 @@ public class Cluedo {
 		dealCards();
 		
 	}
+	
+	private boolean turn = false;
+	
+	public void gameLoopGUI(){
+		int curPlayer = 0;
+		
+		frame.setTurnButtonListener(new ActionListener(){
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				// TODO Auto-generated method stub
+				turn = true;
+				
+				
+			}
+			
+		});
+		while(true){
+			
+			if(players.size() == 1){
+				frame.addText(players.get(0).getName()+ " wins!\n");
+				break;
+			}
+			if(curPlayer >= players.size()){
+				curPlayer = 0;
+			}
+			frame.setButtonEnabled(true);
+			
+			Player pl = players.get(curPlayer);
+			
+			frame.addText("================\n");
+			frame.addText(pl.getName()+"'s turn  ("+pl.playingAs.toString()+")\n");
+			while(turn == false){
+				try{
+					wait(10);
+				}catch(Exception e){
+					
+				}
+			}
+			turn = false;
+			frame.setButtonEnabled(false);
+			
+			frame.displayHand(players.get(curPlayer).getHand());
+			int i = players.get(curPlayer).doTurnGUI(board, solution, players);
+			
+			if(i == 1){
+				frame.addText(players.get(curPlayer).getName()+" wins!");
+				break;
+				
+			}else if(i == 2){
+				frame.addText("Accusation incorrect, "+players.get(curPlayer).getName()+" eliminated!");
+				Player elim = players.get(curPlayer);
+				Player prev = elim.getPrevPlayer();
+				Player next = elim.getNextPlayer();
+				prev.setNextPlayer(next);
+				next.setPrevPlayer(prev);
+				players.remove(elim);
+				
+				int c = 0;
+				for(Card card : elim.getHand()){
+					if(c >= players.size()){
+						c = 0;
+					}
+					players.get(c++).addCard(card);
+					
+				}
+				
+			}else{
+				curPlayer++;
+			}
+			frame.displayHand(new ArrayList<Card>());
+		}
+	}
+	
+	
 	
 	/**
 	 * cycles through each player tells them to take their turn.
@@ -176,6 +268,7 @@ public class Cluedo {
 			}
 		}
 	}
+	
 	
 	/**
 	 * for testing.
@@ -242,6 +335,9 @@ public class Cluedo {
 	 */
 	private void startUpGUI(){
 		setNumPlayers();
+		if(numPlayers < 3){
+			return;
+		}
 	
 		HashMap<Person, JRadioButton> rButtons = new HashMap<Person, JRadioButton>();
 		
@@ -253,8 +349,23 @@ public class Cluedo {
 		
 		for(int i = 1; i <= numPlayers; i++){
 			String pName = "Player " + i;
-			addCharacter(rButtons, pName);
+			addPlayer(rButtons, pName);
 			
+		}
+		
+		//link players together
+		for(int i = 0; i < numPlayers; i++){
+			Player p = players.get(i);
+			if(i == 0){
+				p.setNextPlayer(players.get(i+1));
+				p.setPrevPlayer(players.get(numPlayers-1));
+			}else if(i == numPlayers-1){
+				p.setNextPlayer(players.get(0));
+				p.setPrevPlayer(players.get(i-1));
+			}else{
+				p.setNextPlayer(players.get(i+1));
+				p.setPrevPlayer(players.get(i-1));
+			}
 		}
 	}
 	
@@ -264,7 +375,7 @@ public class Cluedo {
 	 * @param rButtons 
 	 * @param player the name of the player
 	 */
-	private void addCharacter(HashMap<Person, JRadioButton> rButtons, final String player){
+	private void addPlayer(HashMap<Person, JRadioButton> rButtons, final String player){
 		final ButtonGroup group = new ButtonGroup();
 		final HashMap<Person, JRadioButton> buttonMap = rButtons;
 		
@@ -292,14 +403,14 @@ public class Cluedo {
 		d.add(buttonPanel);
 		
 		JButton button = new JButton("Ok");
-		
+		final Cluedo c = this;
 		button.addActionListener(new ActionListener(){
 		
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				for(Person p :buttonMap.keySet()){
 					if(buttonMap.get(p).getModel() == group.getSelection() && buttonMap.get(p).isEnabled() == true){
-						players.add(new Player(board.getStartTile(p), player, p));
+						players.add(new Player(board.getStartTile(p), player, p, frame, c));
 						d.setVisible(false);
 						buttonMap.get(p).setSelected(false);//this didn't seem to work, not sure why, but I didn't look into it.
 						buttonMap.get(p).setEnabled(false);

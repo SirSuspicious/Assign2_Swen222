@@ -5,6 +5,7 @@ import gameObjects.Card;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
@@ -51,6 +52,13 @@ public class InfoPanel extends JPanel {
 	
 	public void addText(String text){
 		leftPanel.addText(text);
+	}
+	
+	public void setTurnButtonListener(ActionListener a){
+		leftPanel.setTurnButtonListener(a);
+	}
+	public void setButtonEnabled(boolean b){
+		leftPanel.setButtonEnabled(b);
 	}
 	
 	@Override

@@ -3,11 +3,28 @@ package main;
 import gameObjects.*;
 
 
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
-import board.RoomTile;
+import javax.swing.BoxLayout;
+import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
+import GUI.GameFrame;
 import board.*;
 
 
@@ -18,15 +35,32 @@ public class Player {
 	private Player prevPlayer;
 	private Tile on;
 	private Room inRoom = null;
-	private Person playingAs;
+	public final Person playingAs;
 	
+	private int movement;
 	
+	private GameFrame frame = null;
+	
+	private int markerD = 50;
+	
+	private Cluedo c;
+	
+	private int status = 0;//0 for still in game, 1 for win, 2 for eliminated.
 	
 	public Player(Tile start, String name, Person p){
 		hand = new ArrayList<Card>();
 		playingAs = p;
 		on = start;
 		this.name = name;
+	}
+	
+	public Player(Tile start, String name, Person p, GameFrame gameFrame, Cluedo cluedo){
+		hand = new ArrayList<Card>();
+		playingAs = p;
+		on = start;
+		this.name = name;
+		frame = gameFrame;
+		c = cluedo;
 	}
 	
 	/**
@@ -45,14 +79,23 @@ public class Player {
 		return false;
 	}
 	
+	
+	/**
+	 * this has been adapted for the GUI.
+	 * @param p
+	 * @param c
+	 * @return
+	 */
 	public boolean refutes(Player p, Suggestion c){
 		if(p == this){
-			System.out.println("Suggestion: "+ c.toString() +" was not refuted.");
+			//System.out.println("Suggestion: "+ c.toString() +" was not refuted.");
+			frame.addText("Suggestion: "+ c.toString() +" was not refuted.\n");
 			return false;
 		}
 		for(Card card : hand){
 			if(c.contains(card)){
-				System.out.println(name+" refutes "+p.getName()+"'s suggestion: "+c.toString());
+				//System.out.println(name+" refutes "+p.getName()+"'s suggestion: "+c.toString());
+				frame.addText(name+" refutes "+p.getName()+"'s suggestion: "+c.toString()+"\n");
 				return true;
 			}
 		}
@@ -60,6 +103,193 @@ public class Player {
 		
 	}
 	
+	
+	/**
+	 * 
+	 * @param g
+	 */
+	public void draw(Graphics g){
+		g.setColor(playingAs.color());
+		int x = on.getPosition().getX();
+		int y = on.getPosition().getY();
+		Position pos = frame.findCoordinatePos(x, y);
+		
+		g.fillOval(pos.getX(), pos.getY(), markerD, markerD);
+		g.setColor(Color.black);
+		g.drawOval(pos.getX(), pos.getY(), markerD, markerD);
+	}
+	
+	/**
+	 * Executes a players turn using the GUI.
+	 * @param board
+	 * @param solution
+	 * @return
+	 */
+	public int doTurnGUI(final Board board, Solution solution, final ArrayList<Player> players){
+	
+		int d1 = Cluedo.randomInt(1, 6);
+		int d2 = Cluedo.randomInt(1, 6);
+		frame.showDice(d1, d2);
+		frame.repaint();
+		movement = d1+d2;
+		
+		if(inRoom != null){
+			if(inRoom.getName() == RoomType.SWIMMING_POOL){
+				int o = JOptionPane.showConfirmDialog(frame, "Would you like to make an accusation?");
+				if(o == 0){
+					
+					makeAccusation(solution);
+					return status;
+				}
+			}else{
+				int o = JOptionPane.showConfirmDialog(frame, "Would you like to make a suggestion?");
+				if(o == 0){
+					
+					makeSuggGUI();
+					return 0;
+				}
+			}
+		}
+	
+		MouseListener listener = new MouseListener(){
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				
+				move(e.getX(), e.getY(), board, players);
+			}
+
+			@Override
+			public void mouseEntered(MouseEvent e) {}
+			@Override
+			public void mouseExited(MouseEvent e) {}
+			@Override
+			public void mousePressed(MouseEvent e) {}
+			@Override
+			public void mouseReleased(MouseEvent e) {}
+		};
+		
+		frame.addCanvasListener(listener);
+		
+		while(true){
+			try{
+				wait(10);
+			}catch(Exception e){}
+			if(movement <= 0){
+				break;
+			}
+		}
+		listener = null;
+		return 0;
+	}
+	
+	
+	/**
+	 * 
+	 * @param x
+	 * @param y
+	 * @param board
+	 */
+	private void move(int x, int y, Board board, ArrayList<Player> players){
+		Position p = frame.findSquarePos(x, y);
+		if(p == null){
+			System.out.println("null position");
+			return;
+		}
+		Tile to = board.getTile(p);
+		for(Player player : players){
+			if(player.on == to){
+				return;
+			}
+		}
+		
+		int i = board.isViableMove(on, to, movement);
+		
+		if(inRoom instanceof CornerRoom){
+			Room other = board.getRoom(board.inRoom(p));
+			if(other instanceof CornerRoom){
+				if(((CornerRoom) inRoom).getTo() == other.getName()){
+					inRoom = other;
+					on = to;
+					movement = 0;
+					c.redraw();
+					return;
+					
+				}
+			}
+		}
+		
+		if(inRoom  != null){
+			if(board.getRoom(board.inRoom(p)) == null){
+				
+				ArrayList<Tile> exits = inRoom.getAdjacentTo();
+				ArrayList<Integer> costs = new ArrayList<Integer>();
+
+				for(Tile t : exits){
+					
+					costs.add(board.isViableMove(t, to, movement));
+				}
+				int minValue = 100;
+
+				for(int j = 0; j < exits.size(); j++){
+					if(costs.get(j) < minValue && costs.get(j)>= 0){
+						minValue = costs.get(j);
+					}
+				}
+				 
+				 if(movement - minValue - 1 >=0){
+					 movement = movement - minValue-1;
+					 on = to;
+					 c.redraw();
+					
+					 inRoom = null;
+					 
+				 }
+				 return;
+			}
+		}
+		
+		
+		if(i < 0){
+			 if(inRoom == board.getRoom(board.inRoom(p))){
+				 return;
+			 }
+
+			 Room r = board.getRoom(board.inRoom(p));
+			 if(r != null){
+				 ArrayList<Tile> enterFrom = r.getAdjacentTo();
+				 ArrayList<Integer> costs = new ArrayList<Integer>();
+
+				 for(Tile t : enterFrom){
+					 costs.add(board.isViableMove(on, t, movement));
+				 }
+
+				
+				 int minValue = 100;
+				 for(int j = 0; j < enterFrom.size(); j++){
+					 if(costs.get(j) < minValue && costs.get(j)>= 0){
+						 minValue = costs.get(j);
+				
+					 }
+				 }
+				 if(!(movement - minValue >0)){
+					 return;
+				 }
+				 movement = 0;
+				 inRoom = board.getRoom(board.inRoom(p));
+				 on = to;
+				 c.redraw();
+				 return;
+			 }
+			
+
+		}else{
+			on = to;
+			movement -= i;
+			c.redraw();
+		}
+	
+	}
+
 	/**
 	 * performs the turn for this player.
 	 * @param sc - Scanner to be used for receiving input
@@ -70,7 +300,7 @@ public class Player {
 	public int doTurn(Scanner sc, Board board, Solution solution){
 		System.out.println("=================================");
 		System.out.println(name + "'s turn.");
-	
+		
 		if(inRoom == null){
 			System.out.println("Your Position: "+ on.toString());
 		}else{
@@ -118,6 +348,248 @@ public class Player {
 		return moveOptions(sc, board, solution, 0);
 
 	}
+	
+	
+	
+	/**
+	 * Gets the player to construct there suggestion using a dialog box with radio buttons 
+	 * for the possible selections.
+	 */
+	private void makeSuggGUI(){
+		
+		ButtonGroup personGroup = new ButtonGroup();
+		final HashMap<Person, JRadioButton> personButtons = personButtons();
+		
+		for(Person p : personButtons.keySet()){
+			personGroup.add(personButtons.get(p));
+		}
+		
+		
+		ButtonGroup weapGroup = new ButtonGroup();
+		final HashMap<Weapon, JRadioButton> weapButtons = weaponButtons();
+		
+		for(Weapon p : weapButtons.keySet()){
+			weapGroup.add(weapButtons.get(p));
+		}
+		
+	
+		final JDialog d = new JDialog();
+		d.setModal(true);
+
+		d.setLayout(new BorderLayout());
+
+		JLabel label = new JLabel(name+" make a selection:");
+		d.add(label, BorderLayout.NORTH);
+		
+		JPanel leftPanel = new JPanel();
+		JPanel rightPanel = new JPanel();
+		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+		
+		for(Person p: Person.values()){
+			JRadioButton b = personButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			leftPanel.add(b);
+		}
+		for(Weapon p: Weapon.values()){
+			JRadioButton b = weapButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			rightPanel.add(b);
+		}
+		
+		
+		
+		d.add(leftPanel);
+		d.add(rightPanel, BorderLayout.EAST);
+		
+		
+		
+		JButton button = new JButton("Ok");
+		
+		
+		final ButtonGroup PG = personGroup;
+		final ButtonGroup WG = weapGroup;
+		final RoomType r = inRoom.getName();
+		final Player pl = this;
+		button.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for(Person p :personButtons.keySet()){
+					if(personButtons.get(p).getModel() == PG.getSelection()){
+						for(Weapon w : weapButtons.keySet()){
+							if(weapButtons.get(w).getModel() == WG.getSelection()){
+								Suggestion s = new Suggestion(r, p, w);
+								d.setVisible(false);
+								
+								nextPlayer.refutes(pl, s);
+								
+							}
+						}
+						
+					
+					
+					}
+				}
+			}
+		});
+		
+		d.add(button, BorderLayout.SOUTH);
+		d.pack();
+		d.setVisible(true);
+		
+	}
+	
+
+	
+	/**
+	 * gets the player to construct their accusation using a dialog box and 
+	 * radio buttons for the possible selections, then checks the accusation against the
+	 * solution and sets the status field according to whether or not the accusation was correct.
+	 * @param solution
+	 */
+	private void makeAccusation(final Solution solution){
+		
+		//Characters
+		ButtonGroup personGroup = new ButtonGroup();
+		final HashMap<Person, JRadioButton> personButtons = personButtons();
+		
+		for(Person p : personButtons.keySet()){
+			personGroup.add(personButtons.get(p));
+		}
+		
+		
+		//Weapons
+		ButtonGroup weapGroup = new ButtonGroup();
+		final HashMap<Weapon, JRadioButton> weapButtons = weaponButtons();
+		
+		for(Weapon p : weapButtons.keySet()){
+			weapGroup.add(weapButtons.get(p));
+		}
+		
+		//Rooms
+		ButtonGroup roomGroup = new ButtonGroup();
+		final HashMap<RoomType, JRadioButton> roomButtons = roomButtons();
+		
+		for(RoomType p : roomButtons.keySet()){
+			roomGroup.add(roomButtons.get(p));
+		}
+		
+	
+		final JDialog d = new JDialog();
+		d.setModal(true);
+
+		d.setLayout(new BorderLayout());
+
+		JLabel label = new JLabel(name+" make a selection:");
+		d.add(label, BorderLayout.NORTH);
+		
+		JPanel leftPanel = new JPanel();
+		JPanel rightPanel = new JPanel();
+		JPanel middlePanel = new JPanel();
+		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
+		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
+		middlePanel.setLayout(new BoxLayout(middlePanel, BoxLayout.Y_AXIS));
+		
+		for(Person p: Person.values()){
+			JRadioButton b = personButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			middlePanel.add(b);
+		}
+		for(Weapon p: Weapon.values()){
+			JRadioButton b = weapButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			rightPanel.add(b);
+		}
+		for(RoomType p: RoomType.values()){
+			JRadioButton b = roomButtons.get(p);
+			b.setAlignmentX(Component.LEFT_ALIGNMENT);
+			leftPanel.add(b);
+		}
+		
+		d.add(middlePanel);
+		d.add(rightPanel, BorderLayout.EAST);
+		d.add(leftPanel, BorderLayout.WEST);
+		
+		JButton button = new JButton("Ok");
+		
+		
+		final ButtonGroup PG = personGroup;
+		final ButtonGroup WG = weapGroup;
+		final ButtonGroup RG = roomGroup;
+		final Player pl = this;
+		
+		button.addActionListener(new ActionListener(){
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				for(Person p :personButtons.keySet()){
+					if(personButtons.get(p).getModel() == PG.getSelection()){
+						
+						for(Weapon w : weapButtons.keySet()){
+							if(weapButtons.get(w).getModel() == WG.getSelection()){
+								
+								for(RoomType r : roomButtons.keySet()){
+									if(roomButtons.get(r).getModel() == RG.getSelection()){
+										
+										Suggestion s = new Suggestion(r, p, w);
+										d.setVisible(false);
+										if(solution.is(s)){
+											status = 1;
+										}else{
+											status = 2;
+										}
+									}
+								}	
+							}
+						}
+					}
+				}
+			}
+		});
+		
+		d.add(button, BorderLayout.SOUTH);
+		d.pack();
+		d.setVisible(true);
+	}
+	final private HashMap<Person, JRadioButton> personButtons(){
+	HashMap<Person, JRadioButton> rButtons = new HashMap<Person, JRadioButton>();
+		
+		for(Person p : Person.values()){
+			JRadioButton b = new JRadioButton(p.toString());
+
+			rButtons.put(p, b);
+		}
+		
+		return rButtons;
+	}
+	
+	
+	
+	
+	private HashMap<Weapon, JRadioButton> weaponButtons(){
+		HashMap<Weapon, JRadioButton> rButtons = new HashMap<Weapon, JRadioButton>();
+			
+			for(Weapon p : Weapon.values()){
+				JRadioButton b = new JRadioButton(p.toString());
+
+				rButtons.put(p, b);
+			}
+			
+			return rButtons;
+		}
+	
+	private HashMap<RoomType, JRadioButton> roomButtons(){
+		HashMap<RoomType, JRadioButton> rButtons = new HashMap<RoomType, JRadioButton>();
+			
+			for(RoomType p : RoomType.values()){
+				JRadioButton b = new JRadioButton(p.toString());
+
+				rButtons.put(p, b);
+			}
+			
+			return rButtons;
+		} 
+	
+	
 	
 	/**
 	 * constructs a suggestion and then checks to see if the suggestion is refuted
