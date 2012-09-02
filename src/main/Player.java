@@ -36,24 +36,24 @@ public class Player {
 	private Tile on;
 	private Room inRoom = null;
 	public final Person playingAs;
-	
+
 	private int movement;
-	
+
 	private GameFrame frame = null;
-	
+
 	private int markerD = 50;
-	
+
 	private Cluedo c;
-	
+
 	private int status = 0;//0 for still in game, 1 for win, 2 for eliminated.
-	
+
 	public Player(Tile start, String name, Person p){
 		hand = new ArrayList<Card>();
 		playingAs = p;
 		on = start;
 		this.name = name;
 	}
-	
+
 	public Player(Tile start, String name, Person p, GameFrame gameFrame, Cluedo cluedo){
 		hand = new ArrayList<Card>();
 		playingAs = p;
@@ -62,7 +62,7 @@ public class Player {
 		frame = gameFrame;
 		c = cluedo;
 	}
-	
+
 	/**
 	 * Used only in the test suite.
 	 * @param c
@@ -71,15 +71,15 @@ public class Player {
 	public boolean containsSuggestion(Suggestion c){
 		for(Card card : hand){
 			if(c.contains(card)){
-				
+
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
-	
+
+
 	/**
 	 * this has been adapted for the GUI.
 	 * @param p
@@ -100,10 +100,10 @@ public class Player {
 			}
 		}
 		return nextPlayer.refutes(p, c);
-		
+
 	}
-	
-	
+
+
 	/**
 	 * 
 	 * @param g
@@ -113,49 +113,49 @@ public class Player {
 		int x = on.getPosition().getX();
 		int y = on.getPosition().getY();
 		Position pos = frame.findCoordinatePos(x, y);
-		
+
 		g.fillOval(pos.getX(), pos.getY(), markerD, markerD);
 		g.setColor(Color.black);
 		g.drawOval(pos.getX(), pos.getY(), markerD, markerD);
 	}
-	
+
 	/**
 	 * Executes a players turn using the GUI.
 	 * @param board
 	 * @param solution
 	 * @return
 	 */
-	public int doTurnGUI(final Board board, Solution solution, final ArrayList<Player> players){
-	
+	public int doTurnGUI(final Board board, final Solution solution, final ArrayList<Player> players){
+
 		int d1 = Cluedo.randomInt(1, 6);
 		int d2 = Cluedo.randomInt(1, 6);
 		frame.showDice(d1, d2);
 		frame.repaint();
 		movement = d1+d2;
-		
+
 		if(inRoom != null){
 			if(inRoom.getName() == RoomType.SWIMMING_POOL){
 				int o = JOptionPane.showConfirmDialog(frame, "Would you like to make an accusation?");
 				if(o == 0){
-					
+
 					makeAccusation(solution);
 					return status;
 				}
 			}else{
 				int o = JOptionPane.showConfirmDialog(frame, "Would you like to make a suggestion?");
 				if(o == 0){
-					
+
 					makeSuggGUI();
 					return 0;
 				}
 			}
 		}
-	
+
 		MouseListener listener = new MouseListener(){
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				
-				move(e.getX(), e.getY(), board, players);
+
+				move(e.getX(), e.getY(), board, players, solution);
 			}
 
 			@Override
@@ -167,9 +167,11 @@ public class Player {
 			@Override
 			public void mouseReleased(MouseEvent e) {}
 		};
-		
+
 		frame.addCanvasListener(listener);
+
 		
+	
 		while(true){
 			try{
 				wait(10);
@@ -179,20 +181,20 @@ public class Player {
 			}
 		}
 		listener = null;
-		return 0;
+		return status;
 	}
-	
-	
+
+
 	/**
 	 * 
 	 * @param x
 	 * @param y
 	 * @param board
 	 */
-	private void move(int x, int y, Board board, ArrayList<Player> players){
+	private void move(int x, int y, Board board, ArrayList<Player> players, Solution solution){
 		Position p = frame.findSquarePos(x, y);
 		if(p == null){
-			System.out.println("null position");
+	
 			return;
 		}
 		Tile to = board.getTile(p);
@@ -201,9 +203,9 @@ public class Player {
 				return;
 			}
 		}
-		
+
 		int i = board.isViableMove(on, to, movement);
-		
+
 		if(inRoom instanceof CornerRoom){
 			Room other = board.getRoom(board.inRoom(p));
 			if(other instanceof CornerRoom){
@@ -212,20 +214,23 @@ public class Player {
 					on = to;
 					movement = 0;
 					c.redraw();
+
+					makeSuggGUI();
+
 					return;
-					
+
 				}
 			}
 		}
-		
+
 		if(inRoom  != null){
 			if(board.getRoom(board.inRoom(p)) == null){
-				
+
 				ArrayList<Tile> exits = inRoom.getAdjacentTo();
 				ArrayList<Integer> costs = new ArrayList<Integer>();
 
 				for(Tile t : exits){
-					
+
 					costs.add(board.isViableMove(t, to, movement));
 				}
 				int minValue = 100;
@@ -235,59 +240,67 @@ public class Player {
 						minValue = costs.get(j);
 					}
 				}
-				 
-				 if(movement - minValue - 1 >=0){
-					 movement = movement - minValue-1;
-					 on = to;
-					 c.redraw();
-					
-					 inRoom = null;
-					 
-				 }
-				 return;
+
+				if(movement - minValue - 1 >=0){
+					movement = movement - minValue-1;
+					on = to;
+					c.redraw();
+
+					inRoom = null;
+
+				}
+				return;
 			}
 		}
-		
-		
+
+
 		if(i < 0){
-			 if(inRoom == board.getRoom(board.inRoom(p))){
-				 return;
-			 }
+			if(inRoom == board.getRoom(board.inRoom(p))){
+				return;
+			}
 
-			 Room r = board.getRoom(board.inRoom(p));
-			 if(r != null){
-				 ArrayList<Tile> enterFrom = r.getAdjacentTo();
-				 ArrayList<Integer> costs = new ArrayList<Integer>();
+			Room r = board.getRoom(board.inRoom(p));
+			if(r != null){
+				ArrayList<Tile> enterFrom = r.getAdjacentTo();
+				ArrayList<Integer> costs = new ArrayList<Integer>();
 
-				 for(Tile t : enterFrom){
-					 costs.add(board.isViableMove(on, t, movement));
-				 }
+				for(Tile t : enterFrom){
+					costs.add(board.isViableMove(on, t, movement));
+				}
 
-				
-				 int minValue = 100;
-				 for(int j = 0; j < enterFrom.size(); j++){
-					 if(costs.get(j) < minValue && costs.get(j)>= 0){
-						 minValue = costs.get(j);
-				
-					 }
-				 }
-				 if(!(movement - minValue >0)){
-					 return;
-				 }
-				 movement = 0;
-				 inRoom = board.getRoom(board.inRoom(p));
-				 on = to;
-				 c.redraw();
-				 return;
-			 }
-			
+
+				int minValue = 100;
+				for(int j = 0; j < enterFrom.size(); j++){
+					if(costs.get(j) < minValue && costs.get(j)>= 0){
+						minValue = costs.get(j);
+
+					}
+				}
+				if(!(movement - minValue >0)){
+					return;
+				}
+				movement = 0;
+				inRoom = board.getRoom(board.inRoom(p));
+				on = to;
+				c.redraw();
+				if(inRoom.getName() == RoomType.SWIMMING_POOL){
+					makeAccusation(solution);
+				}else{
+					makeSuggGUI();
+				}
+
+
+
+				return;
+			}
+
 
 		}else{
 			on = to;
 			movement -= i;
 			c.redraw();
 		}
-	
+
 	}
 
 	/**
@@ -300,29 +313,29 @@ public class Player {
 	public int doTurn(Scanner sc, Board board, Solution solution){
 		System.out.println("=================================");
 		System.out.println(name + "'s turn.");
-		
+
 		if(inRoom == null){
 			System.out.println("Your Position: "+ on.toString());
 		}else{
 			System.out.println("You are in the "+ inRoom.getName());
 		}
-	
-		
+
+
 
 
 		if(inRoom != null){
-			 if(askYesNo("Make suggestion?", sc)){
+			if(askYesNo("Make suggestion?", sc)){
 				makeSuggestion(sc);
 				return 0;
-				
+
 			}else if(inRoom instanceof CornerRoom && askYesNo("Move to opposite corener room?", sc)){
 				inRoom = board.getRoom(((CornerRoom)inRoom).getTo());
 				System.out.println("You may make a suggestion.");
 				makeSuggestion(sc);
 				return 0;
-				
+
 			}else if(inRoom.getName() == RoomType.SWIMMING_POOL && askYesNo("Make accusation?", sc)){
-				
+
 				RoomType r = selectRoom(sc);
 				Person p = selectPerson(sc);
 				Weapon w = selectWeapon(sc);
@@ -335,12 +348,12 @@ public class Player {
 
 
 			}else{
-			
+
 				System.out.println("Select tile to exit to (Enter an integer):");
 				on = selectTile(inRoom.getAdjacentTo(), sc);
 				inRoom = null;
 				return moveOptions(sc, board, solution, 1);
-				
+
 			}
 
 		}
@@ -348,31 +361,31 @@ public class Player {
 		return moveOptions(sc, board, solution, 0);
 
 	}
-	
-	
-	
+
+
+
 	/**
 	 * Gets the player to construct there suggestion using a dialog box with radio buttons 
 	 * for the possible selections.
 	 */
 	private void makeSuggGUI(){
-		
+
 		ButtonGroup personGroup = new ButtonGroup();
 		final HashMap<Person, JRadioButton> personButtons = personButtons();
-		
+
 		for(Person p : personButtons.keySet()){
 			personGroup.add(personButtons.get(p));
 		}
-		
-		
+
+
 		ButtonGroup weapGroup = new ButtonGroup();
 		final HashMap<Weapon, JRadioButton> weapButtons = weaponButtons();
-		
+
 		for(Weapon p : weapButtons.keySet()){
 			weapGroup.add(weapButtons.get(p));
 		}
-		
-	
+
+
 		final JDialog d = new JDialog();
 		d.setModal(true);
 
@@ -380,12 +393,12 @@ public class Player {
 
 		JLabel label = new JLabel(name+" make a selection:");
 		d.add(label, BorderLayout.NORTH);
-		
+
 		JPanel leftPanel = new JPanel();
 		JPanel rightPanel = new JPanel();
 		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
-		
+
 		for(Person p: Person.values()){
 			JRadioButton b = personButtons.get(p);
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -396,17 +409,17 @@ public class Player {
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
 			rightPanel.add(b);
 		}
-		
-		
-		
+
+
+
 		d.add(leftPanel);
 		d.add(rightPanel, BorderLayout.EAST);
-		
-		
-		
+
+
+
 		JButton button = new JButton("Ok");
-		
-		
+
+
 		final ButtonGroup PG = personGroup;
 		final ButtonGroup WG = weapGroup;
 		final RoomType r = inRoom.getName();
@@ -420,27 +433,27 @@ public class Player {
 							if(weapButtons.get(w).getModel() == WG.getSelection()){
 								Suggestion s = new Suggestion(r, p, w);
 								d.setVisible(false);
-								
+
 								nextPlayer.refutes(pl, s);
-								
+
 							}
 						}
-						
-					
-					
+
+
+
 					}
 				}
 			}
 		});
-		
+
 		d.add(button, BorderLayout.SOUTH);
 		d.pack();
 		d.setVisible(true);
-		
-	}
-	
 
-	
+	}
+
+
+
 	/**
 	 * gets the player to construct their accusation using a dialog box and 
 	 * radio buttons for the possible selections, then checks the accusation against the
@@ -448,33 +461,35 @@ public class Player {
 	 * @param solution
 	 */
 	private void makeAccusation(final Solution solution){
-		
+
 		//Characters
 		ButtonGroup personGroup = new ButtonGroup();
 		final HashMap<Person, JRadioButton> personButtons = personButtons();
-		
+
 		for(Person p : personButtons.keySet()){
 			personGroup.add(personButtons.get(p));
 		}
-		
-		
+
+
 		//Weapons
 		ButtonGroup weapGroup = new ButtonGroup();
 		final HashMap<Weapon, JRadioButton> weapButtons = weaponButtons();
-		
+
 		for(Weapon p : weapButtons.keySet()){
 			weapGroup.add(weapButtons.get(p));
 		}
-		
+
 		//Rooms
 		ButtonGroup roomGroup = new ButtonGroup();
 		final HashMap<RoomType, JRadioButton> roomButtons = roomButtons();
-		
+
 		for(RoomType p : roomButtons.keySet()){
-			roomGroup.add(roomButtons.get(p));
-		}
 		
-	
+				roomGroup.add(roomButtons.get(p));
+			
+		}
+
+
 		final JDialog d = new JDialog();
 		d.setModal(true);
 
@@ -482,14 +497,14 @@ public class Player {
 
 		JLabel label = new JLabel(name+" make a selection:");
 		d.add(label, BorderLayout.NORTH);
-		
+
 		JPanel leftPanel = new JPanel();
 		JPanel rightPanel = new JPanel();
 		JPanel middlePanel = new JPanel();
 		leftPanel.setLayout(new BoxLayout(leftPanel, BoxLayout.Y_AXIS));
 		rightPanel.setLayout(new BoxLayout(rightPanel, BoxLayout.Y_AXIS));
 		middlePanel.setLayout(new BoxLayout(middlePanel, BoxLayout.Y_AXIS));
-		
+
 		for(Person p: Person.values()){
 			JRadioButton b = personButtons.get(p);
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
@@ -501,35 +516,41 @@ public class Player {
 			rightPanel.add(b);
 		}
 		for(RoomType p: RoomType.values()){
+			if(p == RoomType.SWIMMING_POOL){
+				continue;
+			}
 			JRadioButton b = roomButtons.get(p);
 			b.setAlignmentX(Component.LEFT_ALIGNMENT);
 			leftPanel.add(b);
 		}
-		
+
 		d.add(middlePanel);
 		d.add(rightPanel, BorderLayout.EAST);
 		d.add(leftPanel, BorderLayout.WEST);
-		
+
 		JButton button = new JButton("Ok");
-		
-		
+
+
 		final ButtonGroup PG = personGroup;
 		final ButtonGroup WG = weapGroup;
 		final ButtonGroup RG = roomGroup;
 		final Player pl = this;
-		
+
 		button.addActionListener(new ActionListener(){
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				for(Person p :personButtons.keySet()){
 					if(personButtons.get(p).getModel() == PG.getSelection()){
-						
+
 						for(Weapon w : weapButtons.keySet()){
 							if(weapButtons.get(w).getModel() == WG.getSelection()){
-								
+
 								for(RoomType r : roomButtons.keySet()){
+									if(r == RoomType.SWIMMING_POOL){
+										continue;
+									}
 									if(roomButtons.get(r).getModel() == RG.getSelection()){
-										
+
 										Suggestion s = new Suggestion(r, p, w);
 										d.setVisible(false);
 										if(solution.is(s)){
@@ -537,6 +558,7 @@ public class Player {
 										}else{
 											status = 2;
 										}
+										
 									}
 								}	
 							}
@@ -545,52 +567,55 @@ public class Player {
 				}
 			}
 		});
-		
+
 		d.add(button, BorderLayout.SOUTH);
 		d.pack();
 		d.setVisible(true);
 	}
 	final private HashMap<Person, JRadioButton> personButtons(){
-	HashMap<Person, JRadioButton> rButtons = new HashMap<Person, JRadioButton>();
-		
+		HashMap<Person, JRadioButton> rButtons = new HashMap<Person, JRadioButton>();
+
 		for(Person p : Person.values()){
 			JRadioButton b = new JRadioButton(p.toString());
 
 			rButtons.put(p, b);
 		}
-		
+
 		return rButtons;
 	}
-	
-	
-	
-	
+
+
+
+
 	private HashMap<Weapon, JRadioButton> weaponButtons(){
 		HashMap<Weapon, JRadioButton> rButtons = new HashMap<Weapon, JRadioButton>();
-			
-			for(Weapon p : Weapon.values()){
-				JRadioButton b = new JRadioButton(p.toString());
 
-				rButtons.put(p, b);
-			}
-			
-			return rButtons;
+		for(Weapon p : Weapon.values()){
+			JRadioButton b = new JRadioButton(p.toString());
+
+			rButtons.put(p, b);
 		}
-	
+
+		return rButtons;
+	}
+
 	private HashMap<RoomType, JRadioButton> roomButtons(){
 		HashMap<RoomType, JRadioButton> rButtons = new HashMap<RoomType, JRadioButton>();
-			
-			for(RoomType p : RoomType.values()){
-				JRadioButton b = new JRadioButton(p.toString());
 
-				rButtons.put(p, b);
+		for(RoomType p : RoomType.values()){
+			if(p == RoomType.SWIMMING_POOL){
+				continue;
 			}
-			
-			return rButtons;
-		} 
-	
-	
-	
+			JRadioButton b = new JRadioButton(p.toString());
+
+			rButtons.put(p, b);
+		}
+
+		return rButtons;
+	} 
+
+
+
 	/**
 	 * constructs a suggestion and then checks to see if the suggestion is refuted
 	 * by the other players.
@@ -600,15 +625,15 @@ public class Player {
 		if(askYesNo("Print cards in your hand? (Enter an integer)", sc)){
 			System.out.println(handToString());
 		}
-		
+
 		RoomType r = inRoom.getName();
 		Person p = selectPerson(sc);
 		Weapon w = selectWeapon(sc);
-		
+
 		Suggestion s = new Suggestion(r, p, w);
 		nextPlayer.refutes(this, s);
 	}
-	
+
 	/**
 	 * Provides the movement options for when a player is not in a room.
 	 * @param sc
@@ -619,7 +644,7 @@ public class Player {
 	private int moveOptions(Scanner sc, Board board, Solution solution, int exited){
 		int dRoll = Cluedo.randomInt(1, 6)-exited;
 		System.out.println("Dice Roll: "+dRoll);
-		
+
 		if(askYesNo("Print room coordinates?", sc)){
 			System.out.println(board.roomCoords());
 		}
@@ -643,8 +668,8 @@ public class Player {
 					makeSuggestion(sc);
 					return 0;
 				}
-				
-				
+
+
 			}else{
 				System.out.println(i+"Moves remaining.");
 				ArrayList<Tile> adj = board.getAdjTiles(on);
@@ -654,8 +679,8 @@ public class Player {
 		}
 		return 0;
 	}
-	
-	
+
+
 	/**
 	 * Helper method.
 	 * asks player to select a tile to move to.
@@ -672,7 +697,7 @@ public class Player {
 		for(int j = 1; j < i; j++){
 			System.out.println(j+": "+adj.get(j).toString());
 		}
-	
+
 		return adj.get(Cluedo.inputInt(sc, 1, i-1));
 	}
 
@@ -683,7 +708,7 @@ public class Player {
 	 * @return
 	 */
 	private Weapon selectWeapon(Scanner sc){
-		
+
 		HashMap<Integer, Weapon> weaps = new HashMap<Integer, Weapon>();
 		int i = 1;
 		for(Weapon w : Weapon.values()){
@@ -695,9 +720,9 @@ public class Player {
 			System.out.println(j+": "+weaps.get(j));
 		}
 		return weaps.get(Cluedo.inputInt(sc, 1, i-1));
-		
+
 	}
-	
+
 	/**
 	 * Helper method;
 	 * asks player to select a Person. 
@@ -716,9 +741,9 @@ public class Player {
 			System.out.println(j+": "+chars.get(j));
 		}
 		return chars.get(Cluedo.inputInt(sc, 1, i-1));
-		
+
 	}
-	
+
 	/**
 	 * Helper method;
 	 * asks player to select a room.
@@ -738,7 +763,7 @@ public class Player {
 		}
 		return rs.get(Cluedo.inputInt(sc, 1, i-1));
 	}
-	
+
 	/**
 	 * 
 	 * @param question Asks user this question
@@ -756,7 +781,7 @@ public class Player {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * adds a crad to the players hand.
 	 * @param card
@@ -764,14 +789,14 @@ public class Player {
 	public void addCard(Card card){
 		hand.add(card);
 	}
-	
-	
+
+
 	public boolean inRoom(){
 		if(inRoom == null){
 			return false;
 		}
 		return true;
-		
+
 	}
 
 	public Player getNextPlayer() {
@@ -808,12 +833,12 @@ public class Player {
 			s = s + c.toString()+"\n";
 		}
 		return s;
-				
+
 	}
 
-	
-	
-	
+
+
+
 	/**
 	 * The following methods are used in testing
 	 * */
@@ -837,7 +862,7 @@ public class Player {
 		this.inRoom = inRoom;
 	}
 
-	
-	
-	
+
+
+
 }

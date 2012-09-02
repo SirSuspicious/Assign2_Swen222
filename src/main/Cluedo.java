@@ -219,7 +219,9 @@ public class Cluedo {
 			}else{
 				curPlayer++;
 			}
+			
 			frame.displayHand(new ArrayList<Card>());
+			frame.repaint();
 		}
 	}
 	
